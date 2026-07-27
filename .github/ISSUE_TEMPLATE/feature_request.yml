@@ -1,0 +1,63 @@
+name: Feature request
+description: Suggest a capability or improvement
+title: "feat: "
+labels: ["enhancement", "needs triage"]
+
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the situation, not the solution. The best features come from a concrete frustration.
+      placeholder: |
+        When I publish a breaking change, consumers only find out when their build fails. I want the
+        diff to be enforceable in my own CI.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to see?
+      placeholder: |
+        A CLI (or an endpoint) that compares a document against the last published version and exits
+        non-zero when the change is breaking.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Designer
+        - Validation / linting
+        - Security analysis
+        - SDK generation
+        - Mock server
+        - API client / test runner
+        - Documentation
+        - Versioning / diff
+        - Monitoring
+        - Collaboration
+        - AI assistant
+        - Deployment / operations
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you have considered
+      description: Including "I currently do this by hand" — that is useful signal.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to open a pull request for this
+          required: false

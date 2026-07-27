@@ -1,0 +1,93 @@
+name: Bug report
+description: Something behaves incorrectly
+title: "bug: "
+labels: ["bug", "needs triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report. If this concerns parsing, validation, diffing,
+        mocking or SDK generation, **please include the specification document** — most such bugs are
+        impossible to act on without one.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you observe, and what did you expect instead?
+      placeholder: |
+        Validating a 3.1 document with a type array reports `schema-type-invalid`, but type arrays are
+        valid in 3.1.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Create an API from the document below
+        2. Open the designer
+        3. See the error in the diagnostics panel
+    validations:
+      required: true
+
+  - type: textarea
+    id: spec
+    attributes:
+      label: Specification document
+      description: A minimal document that triggers the problem. This is rendered as YAML.
+      render: yaml
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Designer (visual or code editor)
+        - Validation / linting
+        - Security analysis
+        - SDK generation
+        - Mock server
+        - API client / test runner
+        - Documentation rendering
+        - Versioning / diff
+        - Monitoring
+        - AI assistant
+        - Setup / installation
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Commit or version
+      placeholder: "main @ 1a2b3c4"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Running mode
+      options:
+        - Local (file storage, local auth, offline AI)
+        - Hosted (any of Supabase / Clerk / OpenRouter configured)
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: |
+        OS: macOS 15.2
+        Node: 22.11.0
+        pnpm: 11.17.0
+        Browser: Chrome 131
+    validations:
+      required: false
