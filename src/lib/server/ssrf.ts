@@ -1,4 +1,6 @@
 import "server-only";
+import { lookup } from "node:dns/promises";
+import { env } from "./env";
 
 /**
  * SSRF protection for the built-in API client.
@@ -15,7 +17,11 @@ export interface UrlPolicy {
 }
 
 export const DEFAULT_POLICY: UrlPolicy = {
-  allowPrivateNetwork: process.env.APP_MODE !== "production",
+  // Deny-by-default: private-network access is an explicit opt-in for local
+  // mode, not something every value except the literal string "production"
+  // gets. Reads through the Zod-validated env() rather than raw
+  // process.env, so an unset/unexpected APP_MODE can't silently fail open.
+  allowPrivateNetwork: env().APP_MODE === "local",
   allowedProtocols: ["http:", "https:"],
 };
 
@@ -50,7 +56,10 @@ export function isPrivateHost(hostname: string): boolean {
 
 export type UrlCheck = { ok: true; url: URL } | { ok: false; reason: string };
 
-export function assertSafeUrl(raw: string, policy: UrlPolicy = DEFAULT_POLICY): UrlCheck {
+export async function assertSafeUrl(
+  raw: string,
+  policy: UrlPolicy = DEFAULT_POLICY,
+): Promise<UrlCheck> {
   let url: URL;
   try {
     url = new URL(raw);
@@ -67,6 +76,28 @@ export function assertSafeUrl(raw: string, policy: UrlPolicy = DEFAULT_POLICY): 
   if (!policy.allowPrivateNetwork && isPrivateHost(url.hostname)) {
     return { ok: false, reason: "Requests to private or loopback addresses are blocked." };
   }
+
+  // The hostname string can look innocuous while its DNS record resolves to a
+  // private/internal address (DNS rebinding) — resolve before trusting it,
+  // don't just pattern-match the literal text. A narrow window remains between
+  // this check and fetch() re-resolving the same name at connect time; pinning
+  // the connection to the address validated here would close that too, but
+  // needs a custom fetch dispatcher and is left as a documented follow-up.
+  if (!policy.allowPrivateNetwork) {
+    let addresses: { address: string }[];
+    try {
+      addresses = await lookup(url.hostname, { all: true });
+    } catch {
+      return { ok: false, reason: "The target host could not be resolved." };
+    }
+    if (addresses.some((a) => isPrivateHost(a.address))) {
+      return {
+        ok: false,
+        reason: "The target host resolves to a private or internal address.",
+      };
+    }
+  }
+
   return { ok: true, url };
 }
 

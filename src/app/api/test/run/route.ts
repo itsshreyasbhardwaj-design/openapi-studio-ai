@@ -28,7 +28,7 @@ const schema = z.object({
 /** SSRF-guarded transport used by the collection runner. */
 function makeTransport(timeoutMs: number): Transport {
   return async (prepared: PreparedRequest): Promise<ExecutionOutcome> => {
-    const check = assertSafeUrl(prepared.url, DEFAULT_POLICY);
+    const check = await assertSafeUrl(prepared.url, DEFAULT_POLICY);
     if (!check.ok) {
       return {
         status: 0,

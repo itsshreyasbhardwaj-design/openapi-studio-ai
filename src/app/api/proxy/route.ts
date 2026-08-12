@@ -56,7 +56,7 @@ export const POST = route(
   async ({ request, log }) => {
     const body = await readJson(request, schema);
 
-    const check = assertSafeUrl(body.url, DEFAULT_POLICY);
+    const check = await assertSafeUrl(body.url, DEFAULT_POLICY);
     if (!check.ok) throw ApiError.badRequest(check.reason);
 
     const headers = sanitizeForwardHeaders(body.headers);

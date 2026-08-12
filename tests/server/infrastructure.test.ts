@@ -1,5 +1,21 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { assertSafeUrl, isPrivateHost, sanitizeForwardHeaders } from "@/lib/server/ssrf";
+
+// Keeps DNS resolution deterministic and offline in tests: everything except
+// the rebinding hostname below resolves as a public address, and the
+// rebinding hostname exercises assertSafeUrl's post-resolution check without
+// depending on real, flaky, attacker-controlled-in-the-real-world DNS.
+vi.mock("node:dns/promises", () => ({
+  lookup: vi.fn(async (hostname: string) => {
+    if (hostname === "internal.rebind.test") {
+      return [{ address: "169.254.169.254", family: 4 }];
+    }
+    if (hostname === "unresolvable.test") {
+      throw new Error("ENOTFOUND");
+    }
+    return [{ address: "93.184.216.34", family: 4 }];
+  }),
+}));
 import { consume, resetRateLimits, clientKey } from "@/lib/server/rate-limit";
 import {
   contentHash,
@@ -37,19 +53,29 @@ describe("SSRF policy", () => {
     }
   });
 
-  it("blocks cloud metadata and private targets when the policy forbids them", () => {
+  it("blocks cloud metadata and private targets when the policy forbids them", async () => {
     const policy = { allowPrivateNetwork: false, allowedProtocols: ["http:", "https:"] };
-    expect(assertSafeUrl("http://169.254.169.254/latest/meta-data/", policy).ok).toBe(false);
-    expect(assertSafeUrl("http://localhost:8080/admin", policy).ok).toBe(false);
-    expect(assertSafeUrl("https://api.example.com/v1", policy).ok).toBe(true);
+    expect((await assertSafeUrl("http://169.254.169.254/latest/meta-data/", policy)).ok).toBe(
+      false,
+    );
+    expect((await assertSafeUrl("http://localhost:8080/admin", policy)).ok).toBe(false);
+    expect((await assertSafeUrl("https://api.example.com/v1", policy)).ok).toBe(true);
   });
 
-  it("rejects non-HTTP protocols and embedded credentials", () => {
+  it("blocks hostnames that resolve to a private address (DNS rebinding)", async () => {
+    const policy = { allowPrivateNetwork: false, allowedProtocols: ["http:", "https:"] };
+    const blocked = await assertSafeUrl("https://internal.rebind.test/", policy);
+    expect(blocked.ok).toBe(false);
+    const unresolvable = await assertSafeUrl("https://unresolvable.test/", policy);
+    expect(unresolvable.ok).toBe(false);
+  });
+
+  it("rejects non-HTTP protocols and embedded credentials", async () => {
     const policy = { allowPrivateNetwork: true, allowedProtocols: ["http:", "https:"] };
-    expect(assertSafeUrl("file:///etc/passwd", policy).ok).toBe(false);
-    expect(assertSafeUrl("gopher://example.com", policy).ok).toBe(false);
-    expect(assertSafeUrl("https://user:pass@example.com", policy).ok).toBe(false);
-    expect(assertSafeUrl("not a url", policy).ok).toBe(false);
+    expect((await assertSafeUrl("file:///etc/passwd", policy)).ok).toBe(false);
+    expect((await assertSafeUrl("gopher://example.com", policy)).ok).toBe(false);
+    expect((await assertSafeUrl("https://user:pass@example.com", policy)).ok).toBe(false);
+    expect((await assertSafeUrl("not a url", policy)).ok).toBe(false);
   });
 
   it("strips hop-by-hop and identity headers before forwarding", () => {
