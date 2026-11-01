@@ -1,0 +1,31 @@
+# gitleaks allowlist — audited exceptions only.
+#
+# Every fingerprint below was inspected during an account-wide security audit
+# and confirmed to be a deliberate test fixture, an example in documentation,
+# a redaction/secret-scanning test's own input, or vendored upstream code.
+# None is a live credential.
+#
+# This file lists FINGERPRINTS, not paths or rules, on purpose: a fingerprint
+# pins one specific finding at one location. A NEW secret added to any of the
+# same files still fails the scan. Do not replace these with path globs.
+#
+# If a finding here ever turns out to be real, delete its line rather than
+# editing it, so the scanner reports it again.
+
+# src/lib/core/ai/offline.ts  [generic-api-key]
+src/lib/core/ai/offline.ts:generic-api-key:604
+
+# src/lib/core/ai/offline.ts  [generic-api-key]
+src/lib/core/ai/offline.ts:generic-api-key:605
+
+# src/lib/core/ai/offline.ts  [generic-api-key]
+1321cfd13abdfe518cc24a83a3599714d0339315:src/lib/core/ai/offline.ts:generic-api-key:604
+
+# src/lib/core/ai/offline.ts  [generic-api-key]
+1321cfd13abdfe518cc24a83a3599714d0339315:src/lib/core/ai/offline.ts:generic-api-key:605
+
+# src/lib/core/openapi/examples.ts  [stripe-access-token]
+src/lib/core/openapi/examples.ts:stripe-access-token:131
+
+# src/lib/core/openapi/examples.ts  [stripe-access-token]
+18bfbe75dcd538cc6abc0e420076efff58d1443a:src/lib/core/openapi/examples.ts:stripe-access-token:131
